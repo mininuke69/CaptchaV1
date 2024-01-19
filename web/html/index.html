@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkbox Form</title>
+</head>
+<body>
+
+<h1>Checkbox Form</h1>
+
+<img id="captchaImage" alt="Captcha Image">
+
+<form id="checkboxForm">
+  <label><input type="checkbox" name="checkbox" value="0"> 1</label>
+  <label><input type="checkbox" name="checkbox" value="1"> 2</label>
+  <label><input type="checkbox" name="checkbox" value="2"> 3</label>
+  <label><input type="checkbox" name="checkbox" value="3"> 4</label>
+  <label><input type="checkbox" name="checkbox" value="4"> 5</label>
+  <label><input type="checkbox" name="checkbox" value="5"> 6</label>
+  <label><input type="checkbox" name="checkbox" value="6"> 7</label>
+  <label><input type="checkbox" name="checkbox" value="7"> 8</label>
+  <label><input type="checkbox" name="checkbox" value="8"> 9</label>
+
+  <button type="button" onclick="submitForm()">Submit</button>
+</form>
+
+<p id="resultText"></p>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // Load the image and extract the X-Captcha-Key header
+  fetch('/captcha')
+    .then(response => {
+      // Store the X-Captcha-Key value
+      const captchaKey = response.headers.get('X-Captcha-Key');
+      sessionStorage.setItem('captchaKey', captchaKey);
+
+      // Convert the response to a blob
+      return response.blob();
+    })
+    .then(blob => {
+      // Display the loaded image
+      document.getElementById('captchaImage').src = URL.createObjectURL(blob);
+    })
+    .catch(error => console.error('Error loading image:', error));
+});
+
+function submitForm() {
+  // Get all checkboxes
+  const checkboxes = document.getElementsByName('checkbox');
+
+  // Build the response string based on checked checkboxes
+  const responseString = Array.from(checkboxes)
+    .map((checkbox, index) => checkbox.checked ? index : null)
+    .filter(index => index !== null)
+    .join('');
+
+  // Get the stored X-Captcha-Key value
+  const captchaKey = sessionStorage.getItem('captchaKey');
+
+  // Display result based on the API response
+  const resultText = document.getElementById('resultText');
+
+  // Replace 'https://your-api-endpoint.com' with your actual API endpoint
+  const apiEndpoint = '/verify';
+
+  // Send the formatted data and captcha key to the API
+  fetch(apiEndpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Captcha-Key': captchaKey,
+    },
+    body: JSON.stringify({ solution: responseString, captcha_key: captchaKey }),
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log(data);
+    resultText.textContent = data ? 'Good' : 'Bad';
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    resultText.textContent = 'Error';
+  });
+}
+</script>
+
+</body>
+</html>
